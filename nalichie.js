@@ -214,3 +214,18 @@ function exportToCSV() {
   link.download = "nalichie_export.csv";
   link.click();
 }
+
+// 📥 Экспорт Excel с сервера
+function exportToExcelFromServer() {
+  fetch('/export_stock')
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nalichie_export.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+}
