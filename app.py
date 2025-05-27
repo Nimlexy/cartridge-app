@@ -270,9 +270,20 @@ def get_statistics():
         "written_off": written_off
     })
 
+from openpyxl import Workbook
+from io import BytesIO
+
 @app.route('/export_stock')
 @login_required
 def export_stock():
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Наличие"
+
+    # Заголовки
+    headers = ["Модель", "Принтер", "Производитель", "Количество", "Организация"]
+    ws.append(headers)
+
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
         c.execute("""
@@ -282,15 +293,22 @@ def export_stock():
         """)
         rows = c.fetchall()
 
-    def generate():
-        yield "\ufeffМодель,Принтер,Производитель,В наличии,Организация\n"
-        for row in rows:
-            name, printer, manufacturer, qty, org = row
-            yield f"{name},{printer},{manufacturer},{qty},{org}\n"
+    for row in rows:
+        ws.append(row)
 
-    return Response(generate(), mimetype='text/csv', headers={
-        "Content-Disposition": "attachment; filename=nalichie_export.csv"
-    })
+    # Сохраняем в байтовый поток
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": "attachment; filename=nalichie_export.xlsx"
+        }
+    )
+
 
 
 @app.route('/export_history')
