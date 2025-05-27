@@ -275,17 +275,23 @@ def get_statistics():
 def export_stock():
     with sqlite3.connect(DB_PATH) as conn:
         c = conn.cursor()
-        c.execute("SELECT name, printer_model, manufacturer, quantity, min_quantity, organization FROM cartridges")
+        c.execute("""
+            SELECT name, printer_model, manufacturer, quantity, organization
+            FROM cartridges
+            ORDER BY name COLLATE NOCASE
+        """)
         rows = c.fetchall()
 
     def generate():
-        yield "Модель,Принтер,Производитель,Остаток,Минимум,Организация\n"
+        yield "\ufeffМодель,Принтер,Производитель,В наличии,Организация\n"
         for row in rows:
-            yield f"{row[0]},{row[1]},{row[2]},{row[3]},{row[4]},{row[5]}\n"
+            name, printer, manufacturer, qty, org = row
+            yield f"{name},{printer},{manufacturer},{qty},{org}\n"
 
     return Response(generate(), mimetype='text/csv', headers={
         "Content-Disposition": "attachment; filename=nalichie_export.csv"
     })
+
 
 @app.route('/export_history')
 @login_required
