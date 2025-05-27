@@ -270,6 +270,7 @@ def get_statistics():
         "written_off": written_off
     })
 
+from flask import send_file
 from openpyxl import Workbook
 from io import BytesIO
 
@@ -280,7 +281,6 @@ def export_stock():
     ws = wb.active
     ws.title = "Наличие"
 
-    # Заголовки
     headers = ["Модель", "Принтер", "Производитель", "Количество", "Организация"]
     ws.append(headers)
 
@@ -291,23 +291,20 @@ def export_stock():
             FROM cartridges
             ORDER BY name COLLATE NOCASE
         """)
-        rows = c.fetchall()
+        for row in c.fetchall():
+            ws.append(row)
 
-    for row in rows:
-        ws.append(row)
-
-    # Сохраняем в байтовый поток
     output = BytesIO()
     wb.save(output)
     output.seek(0)
 
-    return Response(
+    return send_file(
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; filename=nalichie_export.xlsx"
-        }
+        as_attachment=True,
+        download_name="nalichie_export.xlsx"
     )
+
 
 
 
